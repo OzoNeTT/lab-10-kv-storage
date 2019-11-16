@@ -1,5 +1,5 @@
 [![Build Status](https://travis-ci.com/OzoNeTT/lab-10-kv-storage.svg?branch=master)](https://travis-ci.com/OzoNeTT/lab-10-kv-storage)
-![GitHub Repo size](https://img.shields.io/github/repo-size/OzoNeTT/lab-06-multithreads.svg)
+![GitHub Repo size](https://img.shields.io/github/repo-size/OzoNeTT/lab-10-kv-storage.svg)
 ![Some badge](https://img.shields.io/badge/OzoNe-T__T-blue.svg)
 ![forthebadge](https://forthebadge.com/images/badges/not-an-issue.svg)
 
