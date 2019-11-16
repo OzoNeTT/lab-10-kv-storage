@@ -8,59 +8,48 @@
 #include <boost/log/trivial.hpp>
 #include <boost/program_options/parsers.hpp>
 #include "PicoSHA2/picosha2.h"
-
-#include "Random.h"
 #include "Globals.h"
-
-int programArguments(int argc, char *argv[]);
-
-std::string createRandomString(size_t length);
-
-void copyDirectory(const boost::filesystem::path &src, const boost::filesystem::path &dst);
-
-void removeDirectoryIfExists(const boost::filesystem::path &path);
 
 
 int programArguments(int argc, char **argv)
 {
-    namespace options = boost::program_options;
+
     static const std::string OUTPUT_DEFAULT = "dbcs-source";
 
-    options::positional_options_description positionalArgs;
+    boost::program_options::positional_options_description positionalArgs;
     positionalArgs.add("input", -1);
 
-    options::options_description visibleOptions("Available options");
+    boost::program_options::options_description visibleOptions("Available options");
     visibleOptions.add_options()
             ("log-level",
-             options::value<std::string>(&Globals::logLevel)->default_value("error"),
+             boost::program_options::value<std::string>(&Globals::logLevel)->default_value("error"),
              "debug, info, warning or error level")
             ("thread-count",
-             options::value<size_t>(&Globals::threadAmount)->default_value(std::thread::hardware_concurrency()),
+             boost::program_options::value<size_t>(&Globals::threadAmount)->default_value(std::thread::hardware_concurrency()),
              "Threads amount")
             ("output",
-             options::value<std::string>(&Globals::output)->default_value(OUTPUT_DEFAULT),
+             boost::program_options::value<std::string>(&Globals::output)->default_value(OUTPUT_DEFAULT),
              "Output path")
             ("help", "Prints help message");
 
-    options::options_description hiddenOptions("Hidden options");
+    boost::program_options::options_description hiddenOptions("Hidden options");
     hiddenOptions.add_options()
             ("write-only",
              "Create random db (using input path)")
             ("input",
-             options::value<std::string>(&Globals::input),
+             boost::program_options::value<std::string>(&Globals::input),
              "Create random db (using input path)");
 
-    options::options_description allOptions;
+    boost::program_options::options_description allOptions;
     allOptions.add(visibleOptions).add(hiddenOptions);
 
-    options::variables_map variablesMap;
-    options::store(options::command_line_parser(argc, argv)
+    boost::program_options::variables_map variablesMap;
+    boost::program_options::store(boost::program_options::command_line_parser(argc, argv)
                            .options(allOptions).positional(positionalArgs).run(),
                    variablesMap);
-    options::notify(variablesMap);
+    boost::program_options::notify(variablesMap);
 
     if (variablesMap.count("input") && Globals::output == OUTPUT_DEFAULT) {
-        // Change default value, if can
         Globals::output = "dbcs-" + Globals::input;
     }
     if (variablesMap.count("write-only")) {
@@ -77,14 +66,14 @@ int programArguments(int argc, char **argv)
 
 std::string createRandomString(size_t length)
 {
-    static const std::string CHARS = "1234567890_qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM";
+    static const std::string charecters = "1234567890_qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM";
 
     static std::mt19937 generator{std::random_device{}()};
-    static std::uniform_int_distribution<size_t> random{0, CHARS.size() - 1};
+    static std::uniform_int_distribution<size_t> random{0, charecters.size() - 1};
 
     std::string result;
     for (size_t i = 0; i < length; i++) {
-        result += CHARS[random(generator)];
+        result += charecters[random(generator)];
     }
 
     return result;
@@ -92,20 +81,18 @@ std::string createRandomString(size_t length)
 
 void copyDirectory(const boost::filesystem::path &src, const boost::filesystem::path &dst)
 {
-    namespace bfs = boost::filesystem;
-
-    if (bfs::exists(dst)) {
+    if (boost::filesystem::exists(dst)) {
         throw std::runtime_error(dst.generic_string() + " exists");
     }
 
-    if (bfs::is_directory(src)) {
-        bfs::create_directories(dst);
-        for (bfs::directory_entry &item : bfs::directory_iterator(src)) {
+    if (boost::filesystem::is_directory(src)) {
+        boost::filesystem::create_directories(dst);
+        for (boost::filesystem::directory_entry &item : boost::filesystem::directory_iterator(src)) {
             copyDirectory(item.path(), dst / item.path().filename());
         }
 
-    } else if (bfs::is_regular_file(src)) {
-        bfs::copy(src, dst);
+    } else if (boost::filesystem::is_regular_file(src)) {
+        boost::filesystem::copy(src, dst);
 
     } else {
         throw std::runtime_error(dst.generic_string() + " not dir or file");

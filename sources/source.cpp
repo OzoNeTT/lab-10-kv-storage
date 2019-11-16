@@ -25,9 +25,8 @@ void init()
     );
     sinkFile->set_filter(
             boost::log::trivial::severity >= boost::log::trivial::trace
-    );          // Log file setup
+    );
 
-    // From config to boost enum
     static const boost::unordered_map<std::string, boost::log::trivial::severity_level> CONSOLE_FILTER = {
             {"debug", boost::log::trivial::info},
             {"info", boost::log::trivial::info},
@@ -41,7 +40,7 @@ void init()
     );
     sinkConsole->set_filter(
             boost::log::trivial::severity >= CONSOLE_FILTER.at(Globals::logLevel)
-    );      // Log console setup
+    );
 
     boost::log::add_common_attributes();
 }
@@ -80,13 +79,10 @@ int main(int argc, char *argv[])
     auto descriptors = actions.getFamilyDescriptorList();
     auto handlers = actions.open(descriptors);
 
-    std::list<DataBase::RowContainer> cachedRows;
+    std::list<boost::unordered_map<std::string, std::string>> cachedRows;
     for (auto &family: handlers) {
-        cachedRows.push_back(
-            actions.getRows(family.get())
-        );
+        cachedRows.push_back(actions.getRows(family.get()));
         auto &rows = cachedRows.back();
-
         size_t counter = 0;
         auto beginIterator = rows.cbegin();
         for (auto it = rows.cbegin(); it != rows.cend(); ++it) {
@@ -94,27 +90,19 @@ int main(int argc, char *argv[])
 
             static const size_t COUNTER_PER_THREAD = 4;
             if (counter != 0 && counter % COUNTER_PER_THREAD == 0) {
-                boost::asio::post(pool,
-                                  [&actions, &family, beginIterator, it]() {
-                                      actions.hashRows(family.get(),
-                                                       beginIterator,
-                                                       it);
-                                  });
+                boost::asio::post(pool,[&actions, &family, beginIterator, it]() {
+                    actions.hashRows(family.get(),beginIterator,it);
+                });
 
                 beginIterator = it;
             }
         }
 
         if (beginIterator != rows.cend()) {
-            boost::asio::post(pool,
-                              [&actions, &family, beginIterator, &rows]() {
-                                  actions.hashRows(family.get(),
-                                                   beginIterator,
-                                                   rows.cend());
-                              });
+            boost::asio::post(pool,[&actions, &family, beginIterator, &rows]() {
+                actions.hashRows(family.get(),beginIterator,rows.cend());
+            });
         }
-
     }
-
     pool.join();
 }
